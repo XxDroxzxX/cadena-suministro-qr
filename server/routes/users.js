@@ -1,3 +1,5 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
 const { pool } = require('../db/database');
 const { authMiddleware, roleGuard } = require('../middleware/auth');
 

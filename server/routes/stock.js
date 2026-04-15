@@ -1,3 +1,4 @@
+const express = require('express');
 const { pool } = require('../db/database');
 const { authMiddleware, roleGuard } = require('../middleware/auth');
 
