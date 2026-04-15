@@ -1,4 +1,5 @@
 const express = require('express');
+const QRCode = require('qrcode');
 const { pool } = require('../db/database');
 const { authMiddleware, roleGuard } = require('../middleware/auth');
 
