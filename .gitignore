@@ -1,0 +1,12 @@
+node_modules
+.env
+*.db
+*.log
+dist
+.vscode
+.DS_Store
+server/db/inventory.db
+server/db/inventory.db-journal
+server/db/inventory.db-wal
+temp-*.js
+test-*.js
