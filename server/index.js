@@ -5,9 +5,6 @@ require('dotenv').config();
 
 const { initDatabase } = require('./db/database');
 
-// Initialize database
-initDatabase();
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -36,7 +33,18 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 SPECIAL CLEAN OIL Server running on port ${PORT}`);
-  console.log(`📦 API: http://localhost:${PORT}/api`);
-});
+// Async start function to ensure DB is ready
+const start = async () => {
+  try {
+    await initDatabase();
+    app.listen(PORT, () => {
+      console.log(`🚀 SPECIAL CLEAN OIL Server running on port ${PORT}`);
+      console.log(`📦 API: http://localhost:${PORT}/api`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+start();

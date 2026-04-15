@@ -1,20 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { db } = require('../db/database');
-require('dotenv').config();
+const { pool } = require('../db/database');
 
 const router = express.Router();
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1').get(username);
+    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1 AND active = 1', [username]);
+    const user = rows[0];
+    
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -46,14 +47,16 @@ router.post('/login', (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'No autenticado' });
 
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = db.prepare('SELECT id, username, full_name, role, active FROM users WHERE id = ?').get(decoded.id);
+    const { rows } = await pool.query('SELECT id, username, full_name, role, active FROM users WHERE id = $1', [decoded.id]);
+    const user = rows[0];
+
     if (!user || !user.active) {
       return res.status(401).json({ error: 'Usuario no encontrado o desactivado' });
     }

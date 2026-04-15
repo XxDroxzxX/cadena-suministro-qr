@@ -1,21 +1,19 @@
-const express = require('express');
-const QRCode = require('qrcode');
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 const { authMiddleware, roleGuard } = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET /api/stands
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const stands = db.prepare(`
+    const { rows } = await pool.query(`
       SELECT s.*,
         (SELECT COUNT(*) FROM product_stands ps WHERE ps.stand_id = s.id AND ps.quantity > 0) as product_count,
         (SELECT COALESCE(SUM(ps.quantity), 0) FROM product_stands ps WHERE ps.stand_id = s.id) as total_items
       FROM stands s
       ORDER BY s.code
-    `).all();
-    res.json(stands);
+    `);
+    res.json(rows);
   } catch (err) {
     console.error('Get stands error:', err);
     res.status(500).json({ error: 'Error al obtener stands' });
@@ -23,14 +21,15 @@ router.get('/', authMiddleware, (req, res) => {
 });
 
 // GET /api/stands/:id
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const stand = db.prepare('SELECT * FROM stands WHERE id = ?').get(req.params.id);
+    const { rows: standRows } = await pool.query('SELECT * FROM stands WHERE id = $1', [req.params.id]);
+    const stand = standRows[0];
     if (!stand) {
       return res.status(404).json({ error: 'Stand no encontrado' });
     }
 
-    const products = db.prepare(`
+    const { rows: productRows } = await pool.query(`
       SELECT ps.quantity, ps.batch_id, p.id as product_id, p.name, p.sku, p.image_url, p.total_stock, p.unit_price,
              c.name as category_name, c.color as category_color,
              b.batch_number, b.created_at as batch_created
@@ -38,11 +37,11 @@ router.get('/:id', authMiddleware, (req, res) => {
       JOIN products p ON ps.product_id = p.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN batches b ON ps.batch_id = b.id
-      WHERE ps.stand_id = ?
+      WHERE ps.stand_id = $1
       ORDER BY p.name, b.created_at ASC
-    `).all(req.params.id);
+    `, [req.params.id]);
 
-    res.json({ ...stand, products });
+    res.json({ ...stand, products: productRows });
   } catch (err) {
     console.error('Get stand error:', err);
     res.status(500).json({ error: 'Error al obtener stand' });
@@ -50,14 +49,15 @@ router.get('/:id', authMiddleware, (req, res) => {
 });
 
 // GET /api/stands/scan/:code - Scan QR code of stand
-router.get('/scan/:code', authMiddleware, (req, res) => {
+router.get('/scan/:code', authMiddleware, async (req, res) => {
   try {
-    const stand = db.prepare('SELECT * FROM stands WHERE code = ?').get(req.params.code);
+    const { rows: standRows } = await pool.query('SELECT * FROM stands WHERE code = $1', [req.params.code]);
+    const stand = standRows[0];
     if (!stand) {
       return res.status(404).json({ error: 'Stand no encontrado' });
     }
 
-    const products = db.prepare(`
+    const { rows: productRows } = await pool.query(`
       SELECT ps.quantity, ps.id as ps_id, ps.batch_id, p.id as product_id, p.name, p.sku, p.image_url, p.total_stock, p.unit_price,
              c.name as category_name, c.color as category_color,
              b.batch_number, b.created_at as batch_created
@@ -65,11 +65,11 @@ router.get('/scan/:code', authMiddleware, (req, res) => {
       JOIN products p ON ps.product_id = p.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN batches b ON ps.batch_id = b.id
-      WHERE ps.stand_id = ?
+      WHERE ps.stand_id = $1
       ORDER BY p.name, b.created_at ASC
-    `).all(stand.id);
+    `, [stand.id]);
 
-    res.json({ ...stand, products });
+    res.json({ ...stand, products: productRows });
   } catch (err) {
     console.error('Scan stand error:', err);
     res.status(500).json({ error: 'Error al escanear stand' });
@@ -84,8 +84,8 @@ router.post('/', authMiddleware, roleGuard('admin'), async (req, res) => {
       return res.status(400).json({ error: 'Código y nombre son requeridos' });
     }
 
-    const existing = db.prepare('SELECT id FROM stands WHERE code = ?').get(code);
-    if (existing) {
+    const { rows: existingRows } = await pool.query('SELECT id FROM stands WHERE code = $1', [code]);
+    if (existingRows.length > 0) {
       return res.status(400).json({ error: 'El código de stand ya existe' });
     }
 
@@ -96,12 +96,12 @@ router.post('/', authMiddleware, roleGuard('admin'), async (req, res) => {
       color: { dark: '#1A1F2E', light: '#FFFFFF' }
     });
 
-    const result = db.prepare('INSERT INTO stands (code, name, location, qr_data) VALUES (?, ?, ?, ?)').run(
-      code, name, location || null, qr_data
+    const { rows } = await pool.query(
+      'INSERT INTO stands (code, name, location, qr_data) VALUES ($1, $2, $3, $4) RETURNING *',
+      [code, name, location || null, qr_data]
     );
 
-    const stand = db.prepare('SELECT * FROM stands WHERE id = ?').get(result.lastInsertRowid);
-    res.status(201).json(stand);
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error('Create stand error:', err);
     res.status(500).json({ error: 'Error al crear stand' });
@@ -112,7 +112,8 @@ router.post('/', authMiddleware, roleGuard('admin'), async (req, res) => {
 router.put('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
   try {
     const { code, name, location } = req.body;
-    const stand = db.prepare('SELECT * FROM stands WHERE id = ?').get(req.params.id);
+    const { rows: standRows } = await pool.query('SELECT * FROM stands WHERE id = $1', [req.params.id]);
+    const stand = standRows[0];
     if (!stand) {
       return res.status(404).json({ error: 'Stand no encontrado' });
     }
@@ -128,16 +129,18 @@ router.put('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
       });
     }
 
-    db.prepare('UPDATE stands SET code = ?, name = ?, location = ?, qr_data = ? WHERE id = ?').run(
-      code || stand.code,
-      name || stand.name,
-      location !== undefined ? location : stand.location,
-      qr_data,
-      req.params.id
+    const { rows } = await pool.query(
+      'UPDATE stands SET code = $1, name = $2, location = $3, qr_data = $4 WHERE id = $5 RETURNING *',
+      [
+        code || stand.code,
+        name || stand.name,
+        location !== undefined ? location : stand.location,
+        qr_data,
+        req.params.id
+      ]
     );
 
-    const updated = db.prepare('SELECT * FROM stands WHERE id = ?').get(req.params.id);
-    res.json(updated);
+    res.json(rows[0]);
   } catch (err) {
     console.error('Update stand error:', err);
     res.status(500).json({ error: 'Error al actualizar stand' });
@@ -145,14 +148,14 @@ router.put('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
 });
 
 // DELETE /api/stands/:id
-router.delete('/:id', authMiddleware, roleGuard('admin'), (req, res) => {
+router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
   try {
-    const stand = db.prepare('SELECT * FROM stands WHERE id = ?').get(req.params.id);
-    if (!stand) {
+    const { rows } = await pool.query('SELECT id FROM stands WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) {
       return res.status(404).json({ error: 'Stand no encontrado' });
     }
 
-    db.prepare('DELETE FROM stands WHERE id = ?').run(req.params.id);
+    await pool.query('DELETE FROM stands WHERE id = $1', [req.params.id]);
     res.json({ message: 'Stand eliminado correctamente' });
   } catch (err) {
     console.error('Delete stand error:', err);
@@ -161,38 +164,38 @@ router.delete('/:id', authMiddleware, roleGuard('admin'), (req, res) => {
 });
 
 // POST /api/stands/:id/assign - Assign product to stand (with batch)
-router.post('/:id/assign', authMiddleware, roleGuard('admin', 'vendedor'), (req, res) => {
+router.post('/:id/assign', authMiddleware, roleGuard('admin', 'vendedor'), async (req, res) => {
   try {
     const { product_id, quantity, batch_number } = req.body;
-    const stand = db.prepare('SELECT * FROM stands WHERE id = ?').get(req.params.id);
-    if (!stand) return res.status(404).json({ error: 'Stand no encontrado' });
+    const { rows: standRows } = await pool.query('SELECT * FROM stands WHERE id = $1', [req.params.id]);
+    if (standRows.length === 0) return res.status(404).json({ error: 'Stand no encontrado' });
 
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(product_id);
-    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+    const { rows: productRows } = await pool.query('SELECT * FROM products WHERE id = $1', [product_id]);
+    if (productRows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
 
     // Handle Batch
     let batchId = null;
     if (batch_number) {
-      const existingBatch = db.prepare('SELECT id FROM batches WHERE product_id = ? AND batch_number = ?')
-        .get(product_id, batch_number);
-      if (existingBatch) {
-        batchId = existingBatch.id;
+      const { rows: batchRows } = await pool.query('SELECT id FROM batches WHERE product_id = $1 AND batch_number = $2', [product_id, batch_number]);
+      if (batchRows.length > 0) {
+        batchId = batchRows[0].id;
       } else {
-        const result = db.prepare('INSERT INTO batches (product_id, batch_number) VALUES (?, ?)')
-          .run(product_id, batch_number);
-        batchId = result.lastInsertRowid;
+        const { rows: newBatchRows } = await pool.query('INSERT INTO batches (product_id, batch_number) VALUES ($1, $2) RETURNING id', [product_id, batch_number]);
+        batchId = newBatchRows[0].id;
       }
     }
 
-    const existing = db.prepare('SELECT * FROM product_stands WHERE product_id = ? AND stand_id = ? AND (batch_id = ? OR (batch_id IS NULL AND ? IS NULL))')
-      .get(product_id, req.params.id, batchId, batchId);
+    const { rows: existingRows } = await pool.query(
+      'SELECT * FROM product_stands WHERE product_id = $1 AND stand_id = $2 AND (batch_id = $3 OR (batch_id IS NULL AND $3 IS NULL))',
+      [product_id, req.params.id, batchId]
+    );
 
-    if (existing) {
-      db.prepare('UPDATE product_stands SET quantity = ? WHERE id = ?').run(quantity || 0, existing.id);
+    if (existingRows.length > 0) {
+      await pool.query('UPDATE product_stands SET quantity = $1 WHERE id = $2', [quantity || 0, existingRows[0].id]);
     } else {
-      db.prepare('INSERT INTO product_stands (product_id, stand_id, batch_id, quantity) VALUES (?, ?, ?, ?)').run(
+      await pool.query('INSERT INTO product_stands (product_id, stand_id, batch_id, quantity) VALUES ($1, $2, $3, $4)', [
         product_id, req.params.id, batchId, quantity || 0
-      );
+      ]);
     }
 
     res.json({ message: 'Producto asignado al stand correctamente' });
