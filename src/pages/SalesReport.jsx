@@ -187,12 +187,44 @@ export default function SalesReport() {
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           .no-print { display: none !important; }
-          .card { border: none !important; box-shadow: none !important; margin: 0 !important; }
+          .card { border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; }
           .sidebar, .topbar { display: none !important; }
-          body { padding: 0 !important; background: white !important; }
+          body { padding: 20px !important; background: white !important; color: black !important; }
           .layout-content { padding: 0 !important; margin: 0 !important; }
+          .page-content { padding: 0 !important; }
+          
+          /* Force text color for print */
+          * { color: black !important; text-shadow: none !important; }
+          .badge { border: 1px solid #ddd !important; }
+          .table th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid #000 !important; }
+          .table td { border-bottom: 1px solid #eee !important; }
+          
+          /* Add logo for print */
+          .print-header { 
+            display: flex !important; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+          }
+          .print-logo { width: 80px; height: 80px; object-fit: contain; }
+          .print-title { text-align: right; }
+        }
+        @media screen {
+          .print-header { display: none !important; }
         }
       `}} />
+
+      {/* Hidden header only for printing */}
+      <div className="print-header">
+        <img src="/logo.jpg" alt="Logo" className="print-logo" />
+        <div className="print-title">
+          <h2 style={{ margin: 0, color: 'black' }}>SPECIAL CLEAN OIL</h2>
+          <p style={{ margin: 0, color: '#666' }}>Reporte de Suministro y Ventas</p>
+          <small style={{ color: '#999' }}>Fecha: {new Date().toLocaleDateString()}</small>
+        </div>
+      </div>
     </div>
   );
 }

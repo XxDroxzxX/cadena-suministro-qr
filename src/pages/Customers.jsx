@@ -117,29 +117,52 @@ export default function Customers() {
           <p>Registra tu primer cliente para empezar a asociar distribuciones.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+        <div className="data-grid">
           {filteredCustomers.map((customer, idx) => (
-            <div key={customer.id} className="card animate-in" style={{ animationDelay: `${idx * 0.05}s` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>{customer.name}</h3>
-                <div style={{ display: 'flex', gap: '8px' }}>
+            <div key={customer.id} className="card customer-card animate-in" style={{ animationDelay: `${idx * 0.05}s` }}>
+              <div className="card-header-actions">
+                <div className="avatar-initials">
+                  {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+                <div className="actions">
                   {hasRole('admin', 'vendedor') && (
-                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(customer)}>
-                      <Edit2 size={15} />
+                    <button className="btn-icon-ghost" onClick={() => openEdit(customer)} title="Editar">
+                      <Edit2 size={16} />
                     </button>
                   )}
                   {hasRole('admin') && (
-                    <button className="btn btn-ghost btn-icon" onClick={() => { setDeleteCustomer(customer); setShowDeleteModal(true); }}>
-                      <Trash2 size={15} style={{ color: 'var(--danger)' }} />
+                    <button className="btn-icon-ghost text-danger" onClick={() => { setDeleteCustomer(customer); setShowDeleteModal(true); }} title="Eliminar">
+                      <Trash2 size={16} />
                     </button>
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                {customer.document_id && <div><strong>NIT/CC:</strong> {customer.document_id}</div>}
-                {customer.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={14}/> {customer.phone}</div>}
-                {customer.email && <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={14}/> {customer.email}</div>}
-                {customer.address && <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={14}/> {customer.address}</div>}
+              
+              <div className="customer-info-main">
+                <h3>{customer.name}</h3>
+                {customer.document_id && <span className="id-badge">ID: {customer.document_id}</span>}
+              </div>
+
+              <div className="customer-details-list">
+                <div className="detail-row">
+                  <Phone size={14} />
+                  <span>{customer.phone || 'No registrado'}</span>
+                </div>
+                <div className="detail-row">
+                  <Mail size={14} />
+                  <span className="truncate">{customer.email || 'Sin correo'}</span>
+                </div>
+                <div className="detail-row">
+                  <MapPin size={14} />
+                  <span className="address-display">{customer.address || 'Sin dirección'}</span>
+                </div>
+              </div>
+
+              <div className="customer-card-footer">
+                <div className="status-indicator">
+                  <div className="dot active"></div>
+                  <span>Cliente Activo</span>
+                </div>
               </div>
             </div>
           ))}
