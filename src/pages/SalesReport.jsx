@@ -186,11 +186,17 @@ export default function SalesReport() {
       {/* Print stylesheet */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          html, body { 
+            height: auto !important; 
+            margin: 0 !important; 
+            padding: 0 !important;
+            background: white !important;
+          }
           .no-print { display: none !important; }
           .card { border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; }
           .sidebar, .topbar { display: none !important; }
-          body { padding: 20px !important; background: white !important; color: black !important; }
-          .layout-content { padding: 0 !important; margin: 0 !important; }
+          body { padding: 1.5cm !important; color: black !important; }
+          .layout-content { padding: 0 !important; margin: 0 !important; overflow: visible !important; }
           .page-content { padding: 0 !important; }
           
           /* Force text color and visibility for print */
@@ -203,21 +209,41 @@ export default function SalesReport() {
             transition: none !important;
           }
           .animate-in { opacity: 1 !important; transform: none !important; animation: none !important; }
-          .badge { border: 1px solid #ddd !important; background: white !important; }
-          .table th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid #000 !important; }
-          .table td { border-bottom: 1px solid #eee !important; }
+          
+          /* Table Styles for Print */
+          .table { border-collapse: collapse !important; width: 100% !important; margin-top: 10px !important; }
+          .table th { 
+            background: #f8f9fa !important; 
+            color: black !important; 
+            padding: 12px 8px !important;
+            border-bottom: 2px solid #333 !important;
+            text-align: left !important;
+          }
+          .table td { 
+            padding: 10px 8px !important;
+            border-bottom: 1px solid #eee !important;
+          }
+          .badge { 
+            border: 1px solid #ddd !important; 
+            background: white !important; 
+            padding: 2px 6px !important;
+            font-size: 0.75rem !important;
+          }
           
           /* Add logo for print */
           .print-header { 
             display: flex !important; 
             align-items: center; 
             justify-content: space-between; 
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--primary);
+            margin-bottom: 20px;
+            border-bottom: 3px solid #000;
             padding-bottom: 15px;
           }
-          .print-logo { width: 80px; height: 80px; object-fit: contain; }
+          .print-logo { width: 70px; height: 70px; object-fit: contain; }
           .print-title { text-align: right; }
+          .print-title h2 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+          .print-title p { margin: 2px 0 0; color: #444 !important; font-size: 0.9rem; font-weight: 600; }
+          .print-title small { color: #888 !important; }
         }
         @media screen {
           .print-header { display: none !important; }
@@ -228,9 +254,10 @@ export default function SalesReport() {
       <div className="print-header">
         <img src="/logo.jpg" alt="Logo" className="print-logo" />
         <div className="print-title">
-          <h2 style={{ margin: 0, color: 'black' }}>SPECIAL CLEAN OIL</h2>
-          <p style={{ margin: 0, color: '#666' }}>Reporte de Suministro y Ventas</p>
-          <small style={{ color: '#999' }}>Fecha: {new Date().toLocaleDateString()}</small>
+          <h2>SPECIAL CLEAN OIL</h2>
+          <p>SISTEMA DE GESTIÓN DE CADENA DE SUMINISTRO</p>
+          <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Reporte de Inventario y Movimientos</p>
+          <small>Generado el: {new Date().toLocaleString('es-CO')}</small>
         </div>
       </div>
     </div>

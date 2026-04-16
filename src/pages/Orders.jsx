@@ -266,80 +266,80 @@ export default function Orders() {
         </div>
       </Modal>
 
-      {/* MODAL: DISPATCH */}
-      <Modal isOpen={showDispatchModal} onClose={() => { setShowDispatchModal(false); setSelectedOrder(null); }}
-        title={`Despachar Pedido #${selectedOrder?.id}`}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setShowDispatchModal(false)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleDispatch} disabled={saving || !dispatchInfo.carrier || !dispatchInfo.tracking_number}>
-              {saving ? <div className="spinner" style={{ width: 16, height: 16 }}></div> : 'Confirmar Despacho'}
-            </button>
-          </>
-        }>
-        <div className="form-group">
-          <label className="form-label">Transportadora *</label>
-          <input className="form-input" placeholder="Ej: DHL, Servientrega" value={dispatchInfo.carrier}
-            onChange={e => setDispatchInfo({...dispatchInfo, carrier: e.target.value})} required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Número de Guía *</label>
-          <input className="form-input" placeholder="Referencia de rastreo" value={dispatchInfo.tracking_number}
-            onChange={e => setDispatchInfo({...dispatchInfo, tracking_number: e.target.value})} required />
-        </div>
-        <div className="alert-info">
-          <Clock size={16} /> 
-          <div>Al confirmar, el sistema validará el stock y registrará la salida automática de la bodega siguiendo el flujo FIFO.</div>
-        </div>
-      </Modal>
+      {/* MODAL: DISPATCH - Conditional rendering to avoid crashes */}
+      {selectedOrder && showDispatchModal && (
+        <Modal isOpen={showDispatchModal} onClose={() => { setShowDispatchModal(false); setSelectedOrder(null); }}
+          title={`Despachar Pedido #${selectedOrder.id}`}
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => { setShowDispatchModal(false); setSelectedOrder(null); }}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleDispatch} disabled={saving || !dispatchInfo.carrier || !dispatchInfo.tracking_number}>
+                {saving ? <div className="spinner" style={{ width: 16, height: 16 }}></div> : 'Confirmar Despacho'}
+              </button>
+            </>
+          }>
+          <div className="form-group">
+            <label className="form-label">Transportadora *</label>
+            <input className="form-input" placeholder="Ej: DHL, Servientrega" value={dispatchInfo.carrier}
+              onChange={e => setDispatchInfo({...dispatchInfo, carrier: e.target.value})} required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Número de Guía *</label>
+            <input className="form-input" placeholder="Referencia de rastreo" value={dispatchInfo.tracking_number}
+              onChange={e => setDispatchInfo({...dispatchInfo, tracking_number: e.target.value})} required />
+          </div>
+          <div className="alert-info">
+            <Clock size={16} /> 
+            <div>Al confirmar, el sistema validará el stock y registrará la salida automática de la bodega siguiendo el flujo FIFO.</div>
+          </div>
+        </Modal>
+      )}
 
-      {/* MODAL: DETAIL */}
-      <Modal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setSelectedOrder(null); }}
-        title={`Detalle Pedido #${selectedOrder?.id}`}
-        large>
-        {selectedOrder && (
-          <>
-            <div className="detail-section card" style={{ background: 'var(--bg-secondary)', border: 'none', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div className="avatar-initials"><User size={20} /></div>
-                <div>
-                  <h4 style={{ margin: 0 }}>{selectedOrder.customer_name}</h4>
-                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={12}/> {selectedOrder.customer_address}</span>
-                  </div>
+      {/* MODAL: DETAIL - Conditional rendering to avoid crashes */}
+      {selectedOrder && showDetailModal && (
+        <Modal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setSelectedOrder(null); }}
+          title={`Detalle Pedido #${selectedOrder.id}`}
+          large>
+          <div className="detail-section card" style={{ background: 'var(--bg-secondary)', border: 'none', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div className="avatar-initials"><User size={20} /></div>
+              <div>
+                <h4 style={{ margin: 0 }}>{selectedOrder.customer_name}</h4>
+                <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={12}/> {selectedOrder.customer_address}</span>
                 </div>
               </div>
             </div>
-            
-            <h4 style={{ marginBottom: '12px' }}>Productos Solicitados</h4>
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th style={{ textAlign: 'right' }}>Cant.</th>
-                    <th style={{ textAlign: 'right' }}>Unitario</th>
-                    <th style={{ textAlign: 'right' }}>Subtotal</th>
+          </div>
+          
+          <h4 style={{ marginBottom: '12px' }}>Productos Solicitados</h4>
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th style={{ textAlign: 'right' }}>Cant.</th>
+                  <th style={{ textAlign: 'right' }}>Unitario</th>
+                  <th style={{ textAlign: 'right' }}>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedOrder.items?.map(item => (
+                  <tr key={item.id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{item.product_name}</div>
+                      <code style={{ fontSize: '0.7rem' }}>{item.sku}</code>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>{item.quantity}</td>
+                    <td style={{ textAlign: 'right' }}>{formatCOP(item.unit_price)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCOP(item.quantity * item.unit_price)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.items.map(item => (
-                    <tr key={item.id}>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{item.product_name}</div>
-                        <code style={{ fontSize: '0.7rem' }}>{item.sku}</code>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>{item.quantity}</td>
-                      <td style={{ textAlign: 'right' }}>{formatCOP(item.unit_price)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCOP(item.quantity * item.unit_price)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </Modal>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
