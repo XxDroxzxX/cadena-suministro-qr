@@ -13,6 +13,10 @@ const pageTitles = {
   '/scan': 'Escanear QR',
   '/movements': 'Movimientos de Stock',
   '/users': 'Gestión de Usuarios',
+  '/customers': 'Clientes',
+  '/orders': 'Gestión de Pedidos',
+  '/suppliers': 'Gestión de Proveedores',
+  '/sales-report': 'Reporte de Ventas',
 };
 
 export default function Layout() {

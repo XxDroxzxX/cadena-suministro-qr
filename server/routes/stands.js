@@ -173,7 +173,14 @@ router.post('/:id/assign', authMiddleware, roleGuard('admin', 'vendedor'), async
     if (standRows.length === 0) return res.status(404).json({ error: 'Stand no encontrado' });
 
     const { rows: productRows } = await pool.query('SELECT * FROM products WHERE id = $1', [product_id]);
-    if (productRows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    const product = productRows[0];
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    if (parseInt(quantity) > product.total_stock) {
+      return res.status(400).json({ 
+        error: `No puedes asignar ${quantity} unidades. El stock total disponible es solo ${product.total_stock}.` 
+      });
+    }
 
     // Handle Batch
     let batchId = null;

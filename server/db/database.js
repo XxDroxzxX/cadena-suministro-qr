@@ -55,7 +55,56 @@ async function initDatabase() {
         name TEXT NOT NULL,
         location TEXT,
         qr_data TEXT,
+        stage TEXT DEFAULT 'production' CHECK(stage IN ('raw_material', 'production', 'finished_goods', 'distribution')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Migration: Add stage to stands if it doesn't exist
+      ALTER TABLE stands ADD COLUMN IF NOT EXISTS stage TEXT DEFAULT 'production' CHECK(stage IN ('raw_material', 'production', 'finished_goods', 'distribution'));
+
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_name TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        quality_rating INTEGER DEFAULT 5,
+        environmental_rating INTEGER DEFAULT 5,
+        active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS supplier_orders (
+        id SERIAL PRIMARY KEY,
+        supplier_id INTEGER REFERENCES suppliers(id),
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'shipped', 'delivered', 'cancelled')),
+        tracking_number TEXT,
+        carrier TEXT,
+        gps_link TEXT,
+        ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expected_at TIMESTAMP,
+        delivered_at TIMESTAMP,
+        notes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER REFERENCES customers(id),
+        status TEXT DEFAULT 'waiting' CHECK(status IN ('waiting', 'dispatched', 'cancelled')),
+        tracking_number TEXT,
+        carrier TEXT,
+        total_amount DECIMAL(12,2) DEFAULT 0,
+        dispatched_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INTEGER REFERENCES products(id),
+        quantity INTEGER NOT NULL,
+        unit_price DECIMAL(12,2) NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS batches (
@@ -90,6 +139,8 @@ async function initDatabase() {
         product_id INTEGER REFERENCES products(id),
         stand_id INTEGER REFERENCES stands(id),
         batch_id INTEGER REFERENCES batches(id),
+        order_id INTEGER REFERENCES orders(id),
+        supplier_order_id INTEGER REFERENCES supplier_orders(id),
         user_id INTEGER REFERENCES users(id),
         customer_id INTEGER REFERENCES customers(id),
         type TEXT NOT NULL CHECK(type IN ('entrada', 'salida', 'ajuste')),
@@ -98,6 +149,10 @@ async function initDatabase() {
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Migration: Add order_id and supplier_order_id to stock_movements if they don't exist
+      ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS order_id INTEGER REFERENCES orders(id);
+      ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS supplier_order_id INTEGER REFERENCES supplier_orders(id);
     `);
 
     // Seed default admin user

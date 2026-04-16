@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, QrCode, ScanLine, ArrowLeftRight,
   Users, LogOut, FolderTree, Warehouse, Briefcase, FileBarChart,
+  ShoppingCart, Truck, Factory,
 } from 'lucide-react';
 
 const navItems = [
@@ -30,8 +31,15 @@ const navItems = [
   {
     section: 'Ventas y Distribución',
     links: [
+      { to: '/orders', icon: ShoppingCart, label: 'Pedidos', roles: ['admin', 'vendedor', 'bodeguero'] },
       { to: '/customers', icon: Briefcase, label: 'Clientes', roles: ['admin', 'vendedor'] },
       { to: '/sales-report', icon: FileBarChart, label: 'Reportes', roles: ['admin', 'vendedor'] },
+    ]
+  },
+  {
+    section: 'Abastecimiento',
+    links: [
+      { to: '/suppliers', icon: Factory, label: 'Proveedores', roles: ['admin', 'bodeguero'] },
     ]
   },
   {

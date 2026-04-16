@@ -151,7 +151,7 @@ router.post('/salida', authMiddleware, roleGuard('admin', 'bodeguero'), async (r
     }
 
     // Sort by batch creation date (oldest first)
-    queryStr += ` ORDER BY b.created_at ASC, ps.id ASC FOR UPDATE`;
+    queryStr += ` ORDER BY b.created_at ASC, ps.id ASC FOR UPDATE OF ps`;
 
     const { rows: availableRows } = await client.query(queryStr, params);
     const totalAvailable = availableRows.reduce((sum, item) => sum + parseFloat(item.quantity), 0);

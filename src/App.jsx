@@ -11,6 +11,8 @@ import StockMovements from './pages/StockMovements';
 import UsersPage from './pages/Users';
 import Customers from './pages/Customers';
 import SalesReport from './pages/SalesReport';
+import Orders from './pages/Orders';
+import Suppliers from './pages/Suppliers';
 
 function RoleRoute({ children, roles }) {
   const { user } = useAuth();
@@ -47,6 +49,12 @@ function App() {
             } />
             <Route path="sales-report" element={
               <RoleRoute roles={['admin', 'vendedor']}><SalesReport /></RoleRoute>
+            } />
+            <Route path="orders" element={
+              <RoleRoute roles={['admin', 'vendedor', 'bodeguero']}><Orders /></RoleRoute>
+            } />
+            <Route path="suppliers" element={
+              <RoleRoute roles={['admin', 'bodeguero']}><Suppliers /></RoleRoute>
             } />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
