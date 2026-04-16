@@ -193,9 +193,17 @@ export default function SalesReport() {
           .layout-content { padding: 0 !important; margin: 0 !important; }
           .page-content { padding: 0 !important; }
           
-          /* Force text color for print */
-          * { color: black !important; text-shadow: none !important; }
-          .badge { border: 1px solid #ddd !important; }
+          /* Force text color and visibility for print */
+          * { 
+            color: black !important; 
+            text-shadow: none !important; 
+            opacity: 1 !important; 
+            visibility: visible !important; 
+            animation: none !important; 
+            transition: none !important;
+          }
+          .animate-in { opacity: 1 !important; transform: none !important; animation: none !important; }
+          .badge { border: 1px solid #ddd !important; background: white !important; }
           .table th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid #000 !important; }
           .table td { border-bottom: 1px solid #eee !important; }
           

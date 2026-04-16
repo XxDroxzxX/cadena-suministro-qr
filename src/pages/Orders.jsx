@@ -212,7 +212,7 @@ export default function Orders() {
       {/* MODAL: ADD ORDER */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)}
         title="Crear Nuevo Pedido"
-        className="modal-lg"
+        large
         footer={
           <>
             <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancelar</button>
@@ -267,7 +267,7 @@ export default function Orders() {
       </Modal>
 
       {/* MODAL: DISPATCH */}
-      <Modal isOpen={showDispatchModal} onClose={() => setShowDispatchModal(false)}
+      <Modal isOpen={showDispatchModal} onClose={() => { setShowDispatchModal(false); setSelectedOrder(null); }}
         title={`Despachar Pedido #${selectedOrder?.id}`}
         footer={
           <>
@@ -294,9 +294,9 @@ export default function Orders() {
       </Modal>
 
       {/* MODAL: DETAIL */}
-      <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)}
+      <Modal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setSelectedOrder(null); }}
         title={`Detalle Pedido #${selectedOrder?.id}`}
-        className="modal-lg">
+        large>
         {selectedOrder && (
           <>
             <div className="detail-section card" style={{ background: 'var(--bg-secondary)', border: 'none', marginBottom: '20px' }}>
