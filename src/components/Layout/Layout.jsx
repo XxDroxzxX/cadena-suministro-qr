@@ -17,6 +17,7 @@ const pageTitles = {
   '/orders': 'Gestión de Pedidos',
   '/suppliers': 'Gestión de Proveedores',
   '/sales-report': 'Reporte de Ventas',
+  '/surveys': 'Encuestas de Satisfacción',
 };
 
 export default function Layout() {

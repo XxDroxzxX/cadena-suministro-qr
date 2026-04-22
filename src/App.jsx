@@ -13,6 +13,8 @@ import Customers from './pages/Customers';
 import SalesReport from './pages/SalesReport';
 import Orders from './pages/Orders';
 import Suppliers from './pages/Suppliers';
+import Surveys from './pages/Surveys';
+import PublicSurvey from './pages/PublicSurvey';
 
 function RoleRoute({ children, roles }) {
   const { user } = useAuth();
@@ -56,7 +58,11 @@ function App() {
             <Route path="suppliers" element={
               <RoleRoute roles={['admin', 'bodeguero']}><Suppliers /></RoleRoute>
             } />
+            <Route path="surveys" element={
+              <RoleRoute roles={['admin', 'vendedor']}><Surveys /></RoleRoute>
+            } />
           </Route>
+          <Route path="/encuesta/:token" element={<PublicSurvey />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

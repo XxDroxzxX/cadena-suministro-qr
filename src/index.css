@@ -1510,16 +1510,21 @@ img { max-width: 100%; height: auto; }
 }
 
 .gps-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--info);
   font-size: 0.8rem;
   font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
 }
 
 .gps-link:hover {
   text-decoration: underline;
+  color: var(--primary);
 }
 
 .order-creation-grid {

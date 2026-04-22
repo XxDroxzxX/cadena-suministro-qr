@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, QrCode, ScanLine, ArrowLeftRight,
   Users, LogOut, FolderTree, Warehouse, Briefcase, FileBarChart,
-  ShoppingCart, Truck, Factory,
+  ShoppingCart, Truck, Factory, ClipboardCheck,
 } from 'lucide-react';
 
 const navItems = [
@@ -34,6 +34,7 @@ const navItems = [
       { to: '/orders', icon: ShoppingCart, label: 'Pedidos', roles: ['admin', 'vendedor', 'bodeguero'] },
       { to: '/customers', icon: Briefcase, label: 'Clientes', roles: ['admin', 'vendedor'] },
       { to: '/sales-report', icon: FileBarChart, label: 'Reportes', roles: ['admin', 'vendedor'] },
+      { to: '/surveys', icon: ClipboardCheck, label: 'Encuestas', roles: ['admin', 'vendedor'] },
     ]
   },
   {

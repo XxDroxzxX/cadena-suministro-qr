@@ -171,6 +171,28 @@ async function initDatabase() {
         ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
       EXCEPTION WHEN OTHERS THEN 
       END $$;
+
+      -- Survey tables
+      CREATE TABLE IF NOT EXISTS surveys (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        questions JSONB NOT NULL,
+        public_token TEXT UNIQUE NOT NULL,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS survey_responses (
+        id SERIAL PRIMARY KEY,
+        survey_id INTEGER REFERENCES surveys(id) ON DELETE CASCADE,
+        customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+        respondent_name TEXT,
+        respondent_email TEXT,
+        respondent_phone TEXT,
+        answers JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Seed default admin user
