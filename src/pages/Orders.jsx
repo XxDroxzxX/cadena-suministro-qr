@@ -63,8 +63,10 @@ export default function Orders() {
   };
 
   const handleAddProduct = (product) => {
+    if (product.total_stock <= 0) return showToast('Producto sin stock disponible', 'warning');
     const existing = newOrder.items.find(item => item.product_id === product.id);
     if (existing) {
+      if (existing.quantity >= product.total_stock) return showToast('No hay más stock disponible', 'warning');
       setNewOrder({
         ...newOrder,
         items: newOrder.items.map(item => 
@@ -74,9 +76,36 @@ export default function Orders() {
     } else {
       setNewOrder({
         ...newOrder,
-        items: [...newOrder.items, { product_id: product.id, name: product.name, quantity: 1, unit_price: product.unit_price }]
+        items: [...newOrder.items, { 
+          product_id: product.id, 
+          name: product.name, 
+          quantity: 1, 
+          unit_price: product.unit_price,
+          max_available: product.total_stock 
+        }]
       });
     }
+  };
+
+  const handleUpdateItemQuantity = (productId, newQty) => {
+    const qty = parseInt(newQty) || 0;
+    setNewOrder({
+      ...newOrder,
+      items: newOrder.items.map(item => {
+        if (item.product_id === productId) {
+          const validQty = Math.min(Math.max(0, qty), item.max_available);
+          return { ...item, quantity: validQty };
+        }
+        return item;
+      }).filter(item => item.quantity > 0 || qty === 0) // Keep it for now, filter if user types 0 and blurs?
+    });
+  };
+
+  const handleRemoveItem = (productId) => {
+    setNewOrder({
+      ...newOrder,
+      items: newOrder.items.filter(item => item.product_id !== productId)
+    });
   };
 
   const handleCreateOrder = async (e) => {
@@ -249,12 +278,32 @@ export default function Orders() {
             <h4 style={{ marginBottom: '12px', fontSize: '0.9rem' }}>Resumen del Pedido</h4>
             <div className="items-list">
               {newOrder.items.map(item => (
-                <div key={item.product_id} className="summary-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-color)' }}>
-                  <span style={{ fontSize: '0.85rem' }}>{item.name} <small>x{item.quantity}</small></span>
-                  <span style={{ fontWeight: 700 }}>{formatCOP(item.quantity * item.unit_price)}</span>
+                <div key={item.product_id} className="summary-item" style={{ padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.name}</span>
+                    <button className="btn-icon-ghost btn-sm" style={{ color: 'var(--error)' }} onClick={() => handleRemoveItem(item.product_id)}>
+                      <XCircle size={14} />
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Cant:</label>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ width: '70px', padding: '4px 8px', height: '30px', fontSize: '0.85rem' }}
+                        value={item.quantity}
+                        min="1"
+                        max={item.max_available}
+                        onChange={(e) => handleUpdateItemQuantity(item.product_id, e.target.value)}
+                      />
+                      <small style={{ fontSize: '0.65rem', opacity: 0.6 }}>de {item.max_available}</small>
+                    </div>
+                    <span style={{ fontWeight: 700 }}>{formatCOP(item.quantity * item.unit_price)}</span>
+                  </div>
                 </div>
               ))}
-              {newOrder.items.length === 0 && <p style={{ textAlign: 'center', padding: '20px', opacity: 0.5 }}>Sin productos</p>}
+              {newOrder.items.length === 0 && <p style={{ textAlign: 'center', padding: '20px', opacity: 0.5 }}>Sin productos seleccionados</p>}
             </div>
             <div className="summary-total" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '2px solid var(--primary)', display: 'flex', justifyContent: 'space-between' }}>
               <strong>Total:</strong>

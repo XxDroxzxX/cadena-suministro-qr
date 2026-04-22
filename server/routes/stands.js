@@ -167,50 +167,73 @@ router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
 
 // POST /api/stands/:id/assign - Assign product to stand (with batch)
 router.post('/:id/assign', authMiddleware, roleGuard('admin', 'vendedor'), async (req, res) => {
+  const client = await pool.connect();
   try {
     const { product_id, quantity, batch_number } = req.body;
-    const { rows: standRows } = await pool.query('SELECT * FROM stands WHERE id = $1', [req.params.id]);
-    if (standRows.length === 0) return res.status(404).json({ error: 'Stand no encontrado' });
+    
+    await client.query('BEGIN');
 
-    const { rows: productRows } = await pool.query('SELECT * FROM products WHERE id = $1', [product_id]);
+    const { rows: standRows } = await client.query('SELECT * FROM stands WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (standRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Stand no encontrado' });
+    }
+
+    const { rows: productRows } = await client.query('SELECT * FROM products WHERE id = $1 FOR UPDATE', [product_id]);
     const product = productRows[0];
-    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
-
-    if (parseInt(quantity) > product.total_stock) {
-      return res.status(400).json({ 
-        error: `No puedes asignar ${quantity} unidades. El stock total disponible es solo ${product.total_stock}.` 
-      });
+    if (!product) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
     // Handle Batch
     let batchId = null;
     if (batch_number) {
-      const { rows: batchRows } = await pool.query('SELECT id FROM batches WHERE product_id = $1 AND batch_number = $2', [product_id, batch_number]);
+      const { rows: batchRows } = await client.query('SELECT id FROM batches WHERE product_id = $1 AND batch_number = $2', [product_id, batch_number]);
       if (batchRows.length > 0) {
         batchId = batchRows[0].id;
       } else {
-        const { rows: newBatchRows } = await pool.query('INSERT INTO batches (product_id, batch_number) VALUES ($1, $2) RETURNING id', [product_id, batch_number]);
+        const { rows: newBatchRows } = await client.query('INSERT INTO batches (product_id, batch_number) VALUES ($1, $2) RETURNING id', [product_id, batch_number]);
         batchId = newBatchRows[0].id;
       }
     }
 
-    const { rows: existingRows } = await pool.query(
-      'SELECT * FROM product_stands WHERE product_id = $1 AND stand_id = $2 AND (batch_id = $3 OR (batch_id IS NULL AND $3 IS NULL))',
+    const { rows: existingRows } = await client.query(
+      'SELECT * FROM product_stands WHERE product_id = $1 AND stand_id = $2 AND (batch_id = $3 OR (batch_id IS NULL AND $3 IS NULL)) FOR UPDATE',
       [product_id, req.params.id, batchId]
     );
 
     if (existingRows.length > 0) {
-      await pool.query('UPDATE product_stands SET quantity = $1 WHERE id = $2', [quantity || 0, existingRows[0].id]);
+      await client.query('UPDATE product_stands SET quantity = $1 WHERE id = $2', [quantity || 0, existingRows[0].id]);
     } else {
-      await pool.query('INSERT INTO product_stands (product_id, stand_id, batch_id, quantity) VALUES ($1, $2, $3, $4)', [
+      await client.query('INSERT INTO product_stands (product_id, stand_id, batch_id, quantity) VALUES ($1, $2, $3, $4)', [
         product_id, req.params.id, batchId, quantity || 0
       ]);
     }
 
-    res.json({ message: 'Producto asignado al stand correctamente' });
+    // CRITICAL: Recalculate total_stock for the product
+    const { rows: stockSumRows } = await client.query(
+      'SELECT COALESCE(SUM(quantity), 0) as total FROM product_stands WHERE product_id = $1',
+      [product_id]
+    );
+    const newTotalStock = stockSumRows[0].total;
+
+    await client.query('UPDATE products SET total_stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newTotalStock, product_id]);
+
+    // Log movement
+    await client.query(`
+      INSERT INTO stock_movements (product_id, stand_id, batch_id, user_id, type, quantity, notes)
+      VALUES ($1, $2, $3, $4, 'ajuste', $5, $6)
+    `, [product_id, req.params.id, batchId, req.user.id, quantity || 0, 'Ajuste manual de stock en estante/lote']);
+
+    await client.query('COMMIT');
+    res.json({ message: 'Producto asignado al stand y stock sincronizado correctamente', total_stock: newTotalStock });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Assign product error:', err);
-    res.status(500).json({ error: 'Error al asignar producto' });
+    res.status(500).json({ error: 'Error al asignar producto y sincronizar stock' });
+  } finally {
+    client.release();
   }
 });
 
