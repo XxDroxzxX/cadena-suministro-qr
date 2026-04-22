@@ -54,8 +54,8 @@ export default function SalesReport() {
   };
 
   const calculateTotals = () => {
-    const totalAmount = sales.reduce((sum, item) => sum + (item.total_price || 0), 0);
-    const totalUnits = sales.reduce((sum, item) => sum + item.quantity, 0);
+    const totalAmount = sales.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
+    const totalUnits = sales.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     return { totalAmount, totalUnits };
   };
 

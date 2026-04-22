@@ -150,9 +150,27 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Migration: Add order_id and supplier_order_id to stock_movements if they don't exist
-      ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS order_id INTEGER REFERENCES orders(id);
-      ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS supplier_order_id INTEGER REFERENCES supplier_orders(id);
+      -- Migration: Ensure cascades exist for product deletion
+      -- For order_items
+      DO $$ 
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'order_items_product_id_fkey') THEN
+          ALTER TABLE order_items DROP CONSTRAINT order_items_product_id_fkey;
+        END IF;
+        ALTER TABLE order_items ADD CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+      EXCEPTION WHEN OTHERS THEN 
+        -- If already exists with different name or similar, just log or skip
+      END $$;
+
+      -- For stock_movements
+      DO $$ 
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'stock_movements_product_id_fkey') THEN
+          ALTER TABLE stock_movements DROP CONSTRAINT stock_movements_product_id_fkey;
+        END IF;
+        ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+      EXCEPTION WHEN OTHERS THEN 
+      END $$;
     `);
 
     // Seed default admin user

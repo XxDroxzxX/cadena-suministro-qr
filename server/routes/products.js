@@ -231,19 +231,21 @@ router.put('/:id', authMiddleware, roleGuard('admin', 'vendedor'), upload.single
   }
 });
 
-// DELETE /api/products/:id
-router.delete('/:id', authMiddleware, roleGuard('admin', 'vendedor'), async (req, res) => {
+// DELETE /api/products/:id - Admin only
+router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id FROM products WHERE id = $1', [req.params.id]);
+    const { rows } = await pool.query('SELECT name FROM products WHERE id = $1', [req.params.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
+    const productName = rows[0].name;
     await pool.query('DELETE FROM products WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Producto eliminado correctamente' });
+    
+    res.json({ message: `Producto "${productName}" y sus registros asociados eliminados correctamente` });
   } catch (err) {
     console.error('Delete product error:', err);
-    res.status(500).json({ error: 'Error al eliminar producto' });
+    res.status(500).json({ error: 'Error al eliminar producto. Verifique si tiene dependencias activas.' });
   }
 });
 
