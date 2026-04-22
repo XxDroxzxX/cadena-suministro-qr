@@ -192,4 +192,17 @@ router.get('/:id/qr', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/surveys/:id - Admin only
+router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT title FROM surveys WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Encuesta no encontrada' });
+    await pool.query('DELETE FROM surveys WHERE id = $1', [req.params.id]);
+    res.json({ message: `Encuesta "${rows[0].title}" y sus respuestas eliminadas correctamente` });
+  } catch (err) {
+    console.error('Delete survey error:', err);
+    res.status(500).json({ error: 'Error al eliminar encuesta' });
+  }
+});
+
 module.exports = router;

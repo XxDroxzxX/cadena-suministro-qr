@@ -165,4 +165,21 @@ router.put('/:id/dispatch', authMiddleware, roleGuard('admin', 'bodeguero'), asy
   }
 });
 
+// DELETE /api/orders/:id - Admin only
+router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, status FROM orders WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Pedido no encontrado' });
+    if (rows[0].status === 'dispatched') {
+      return res.status(400).json({ error: 'No se puede eliminar un pedido ya despachado. Esto alteraría el inventario.' });
+    }
+    await pool.query('DELETE FROM order_items WHERE order_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM orders WHERE id = $1', [req.params.id]);
+    res.json({ message: `Pedido #${req.params.id} eliminado correctamente` });
+  } catch (err) {
+    console.error('Delete order error:', err);
+    res.status(500).json({ error: 'Error al eliminar pedido' });
+  }
+});
+
 module.exports = router;

@@ -6,7 +6,7 @@ import Modal from '../components/UI/Modal';
 import { 
   Plus, Search, Factory, Truck, Clock, CheckCircle, 
   XCircle, Star, MapPin, ExternalLink, Package, Calendar,
-  BarChart3, RefreshCw, User, Phone, Mail, Award
+  BarChart3, RefreshCw, User, Phone, Mail, Award, Trash2
 } from 'lucide-react';
 
 export default function Suppliers() {
@@ -59,6 +59,17 @@ export default function Suppliers() {
       showToast(err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteSupplier = async (supplier) => {
+    if (!confirm(`¿Estás seguro de eliminar al proveedor "${supplier.name}"?`)) return;
+    try {
+      await api.delete(`/suppliers/${supplier.id}`);
+      showToast(`Proveedor ${supplier.name} eliminado`, 'success');
+      fetchData();
+    } catch (err) {
+      showToast(err.message, 'error');
     }
   };
 
@@ -179,6 +190,12 @@ export default function Suppliers() {
                   <div className={`dot ${s.active ? 'active' : ''}`}></div>
                   <span>{s.active ? 'Activo' : 'Inactivo'}</span>
                 </div>
+                {hasRole('admin') && (
+                  <button className="btn-icon-ghost btn-sm" style={{ color: 'var(--error)', marginLeft: 'auto' }} 
+                    onClick={() => handleDeleteSupplier(s)} title="Eliminar Proveedor">
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
               
               <div className="customer-info-main" style={{ margin: '16px 0' }}>

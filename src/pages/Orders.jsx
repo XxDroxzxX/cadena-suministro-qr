@@ -7,7 +7,7 @@ import Modal from '../components/UI/Modal';
 import { 
   Plus, Search, ShoppingCart, Truck, Clock, CheckCircle, 
   XCircle, Package, User, MapPin, ExternalLink, Calendar,
-  Hash, DollarSign, Tag
+  Hash, DollarSign, Tag, Trash2
 } from 'lucide-react';
 
 export default function Orders() {
@@ -161,6 +161,17 @@ export default function Orders() {
     }
   };
 
+  const handleDeleteOrder = async (order) => {
+    if (!confirm(`¿Estás seguro de eliminar el Pedido #${order.id}? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/orders/${order.id}`);
+      showToast(`Pedido #${order.id} eliminado`, 'success');
+      loadOrders();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
   const filteredOrders = orders.filter(o => 
     o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.id.toString().includes(searchTerm)
@@ -237,6 +248,11 @@ export default function Orders() {
                 {order.status === 'waiting' && hasRole('admin', 'bodeguero') && (
                   <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => { setSelectedOrder(order); setShowDispatchModal(true); }}>
                     <Truck size={14} /> Despachar
+                  </button>
+                )}
+                {order.status === 'waiting' && hasRole('admin') && (
+                  <button className="btn-icon-ghost btn-sm" style={{ color: 'var(--error)' }} onClick={() => handleDeleteOrder(order)} title="Eliminar Pedido">
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>

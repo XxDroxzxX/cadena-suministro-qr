@@ -6,7 +6,7 @@ import Modal from '../components/UI/Modal';
 import {
   Plus, ClipboardCheck, QrCode, BarChart3, Users, Eye,
   CheckCircle, XCircle, Star, ChevronDown, ChevronUp,
-  Copy, ExternalLink, Edit, ToggleLeft, ToggleRight
+  Copy, ExternalLink, Edit, ToggleLeft, ToggleRight, Trash2
 } from 'lucide-react';
 
 const DEFAULT_QUESTIONS = [
@@ -176,6 +176,17 @@ export default function Surveys() {
     }
   };
 
+  const handleDeleteSurvey = async (survey) => {
+    if (!confirm(`¿Estás seguro de eliminar la encuesta "${survey.title}"? Todas las respuestas se perderán.`)) return;
+    try {
+      await api.delete(`/surveys/${survey.id}`);
+      showToast('Encuesta eliminada', 'success');
+      loadSurveys();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
   const copyUrl = (url) => {
     navigator.clipboard.writeText(url);
     showToast('Enlace copiado al portapapeles', 'success');
@@ -282,6 +293,11 @@ export default function Surveys() {
                   title={survey.active ? 'Desactivar' : 'Activar'}>
                   {survey.active ? <ToggleRight size={18} color="var(--success)" /> : <ToggleLeft size={18} />}
                 </button>
+                {hasRole('admin') && (
+                  <button className="btn-icon-ghost btn-sm" style={{ color: 'var(--error)' }} onClick={() => handleDeleteSurvey(survey)} title="Eliminar Encuesta">
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -155,4 +155,17 @@ router.put('/orders/:id/deliver', authMiddleware, roleGuard('admin', 'bodeguero'
   }
 });
 
+// DELETE /api/suppliers/:id - Admin only
+router.delete('/:id', authMiddleware, roleGuard('admin'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT name FROM suppliers WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Proveedor no encontrado' });
+    await pool.query('UPDATE suppliers SET active = 0 WHERE id = $1', [req.params.id]);
+    res.json({ message: `Proveedor "${rows[0].name}" eliminado correctamente` });
+  } catch (err) {
+    console.error('Delete supplier error:', err);
+    res.status(500).json({ error: 'Error al eliminar proveedor' });
+  }
+});
+
 module.exports = router;
