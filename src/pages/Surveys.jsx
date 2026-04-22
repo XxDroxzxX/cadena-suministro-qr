@@ -75,11 +75,13 @@ export default function Surveys() {
   const [statsData, setStatsData] = useState(null);
   const [expandedQuestion, setExpandedQuestion] = useState(null);
 
-  const [newSurvey, setNewSurvey] = useState({
-    title: 'Encuesta de Satisfacción - Special Clean Oil',
-    description: 'Queremos conocer tu experiencia con nuestros productos para mejorar continuamente.',
-    questions: DEFAULT_QUESTIONS
-  });
+  // Survey creation state
+  const [surveyTitle, setSurveyTitle] = useState('Encuesta de Satisfacción - Special Clean Oil');
+  const [surveyDesc, setSurveyDesc] = useState('Queremos conocer tu experiencia con nuestros productos para mejorar continuamente.');
+  const [enabledDefaults, setEnabledDefaults] = useState(() => DEFAULT_QUESTIONS.map(q => q.id));
+  const [customQuestions, setCustomQuestions] = useState([]);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [newQuestion, setNewQuestion] = useState({ label: '', type: 'select', options: '', required: true });
 
   useEffect(() => { loadSurveys(); }, []);
 
@@ -96,17 +98,47 @@ export default function Surveys() {
   };
 
   const handleCreate = async () => {
+    const selectedDefaults = DEFAULT_QUESTIONS.filter(q => enabledDefaults.includes(q.id));
+    const allQuestions = [...selectedDefaults, ...customQuestions];
+    if (allQuestions.length === 0) return showToast('Agrega al menos una pregunta', 'warning');
     try {
       setSaving(true);
-      await api.post('/surveys', newSurvey);
+      await api.post('/surveys', { title: surveyTitle, description: surveyDesc, questions: allQuestions });
       showToast('Encuesta creada exitosamente', 'success');
       setShowCreate(false);
+      setCustomQuestions([]);
+      setEnabledDefaults(DEFAULT_QUESTIONS.map(q => q.id));
       loadSurveys();
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleDefaultQuestion = (id) => {
+    setEnabledDefaults(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const addCustomQuestion = () => {
+    if (!newQuestion.label.trim()) return showToast('Escribe la pregunta', 'warning');
+    const opts = newQuestion.options.split(',').map(o => o.trim()).filter(Boolean);
+    if (opts.length < 2) return showToast('Agrega al menos 2 opciones separadas por coma', 'warning');
+    const q = {
+      id: 'custom_' + Date.now(),
+      label: newQuestion.label.trim(),
+      type: newQuestion.type,
+      required: newQuestion.required,
+      options: opts
+    };
+    setCustomQuestions([...customQuestions, q]);
+    setNewQuestion({ label: '', type: 'select', options: '', required: true });
+    setShowAddQuestion(false);
+    showToast('Pregunta personalizada agregada', 'success');
+  };
+
+  const removeCustomQuestion = (id) => {
+    setCustomQuestions(customQuestions.filter(q => q.id !== id));
   };
 
   const handleToggleActive = async (survey) => {
@@ -261,44 +293,136 @@ export default function Surveys() {
         footer={
           <>
             <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleCreate} disabled={saving || !newSurvey.title}>
-              {saving ? <div className="spinner" style={{ width: 16, height: 16 }}></div> : 'Crear Encuesta'}
+            <button className="btn btn-primary" onClick={handleCreate} disabled={saving || !surveyTitle}>
+              {saving ? <div className="spinner" style={{ width: 16, height: 16 }}></div> : `Crear Encuesta (${enabledDefaults.length + customQuestions.length} preguntas)`}
             </button>
           </>
         }>
         <div className="form-group">
           <label className="form-label">Título de la Encuesta *</label>
-          <input className="form-input" value={newSurvey.title}
-            onChange={e => setNewSurvey({ ...newSurvey, title: e.target.value })} />
+          <input className="form-input" value={surveyTitle}
+            onChange={e => setSurveyTitle(e.target.value)} />
         </div>
         <div className="form-group">
           <label className="form-label">Descripción (visible para el cliente)</label>
-          <textarea className="form-textarea" value={newSurvey.description}
-            onChange={e => setNewSurvey({ ...newSurvey, description: e.target.value })} />
+          <textarea className="form-textarea" value={surveyDesc}
+            onChange={e => setSurveyDesc(e.target.value)} />
         </div>
+
+        {/* DEFAULT QUESTIONS with toggles */}
         <div style={{ marginTop: '16px' }}>
           <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ClipboardCheck size={16} color="var(--primary)" /> Preguntas Incluidas ({newSurvey.questions.length})
+            <ClipboardCheck size={16} color="var(--primary)" /> Preguntas Predeterminadas
           </h4>
-          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {newSurvey.questions.map((q, idx) => (
-              <div key={q.id} className="card" style={{ padding: '12px', marginBottom: '8px', background: 'var(--bg-secondary)', border: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{idx + 1}. {q.label}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                      {q.type === 'select' ? 'Selección única' : 'Selección múltiple'} · {q.options.length} opciones
-                      {q.required && <span style={{ color: 'var(--error)', marginLeft: '6px' }}>* Obligatoria</span>}
+          <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+            {DEFAULT_QUESTIONS.map((q) => {
+              const isOn = enabledDefaults.includes(q.id);
+              return (
+                <div key={q.id} className="card" style={{
+                  padding: '12px', marginBottom: '8px',
+                  background: isOn ? 'var(--bg-secondary)' : 'transparent',
+                  border: isOn ? 'none' : '1px dashed var(--border-color)',
+                  opacity: isOn ? 1 : 0.5,
+                  transition: 'all 0.2s ease'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{q.label}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                        {q.type === 'select' ? 'Selección única' : 'Selección múltiple'} · {q.options.join(', ')}
+                      </div>
                     </div>
+                    <button className="btn-icon-ghost" onClick={() => toggleDefaultQuestion(q.id)}
+                      title={isOn ? 'Desactivar' : 'Activar'} style={{ flexShrink: 0 }}>
+                      {isOn ? <ToggleRight size={22} color="var(--success)" /> : <ToggleLeft size={22} />}
+                    </button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* CUSTOM QUESTIONS */}
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Edit size={16} color="var(--warning)" /> Preguntas Personalizadas ({customQuestions.length})
+            </h4>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowAddQuestion(!showAddQuestion)}>
+              <Plus size={14} /> Agregar
+            </button>
+          </div>
+
+          {showAddQuestion && (
+            <div className="card" style={{ padding: '16px', marginBottom: '12px', border: '1px solid var(--primary)', background: 'var(--primary-bg)' }}>
+              <div className="form-group" style={{ marginBottom: '10px' }}>
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Pregunta *</label>
+                <input className="form-input" placeholder="Ej: ¿Recomendarías este producto a un amigo?"
+                  value={newQuestion.label} onChange={e => setNewQuestion({ ...newQuestion, label: e.target.value })} />
               </div>
-            ))}
-          </div>
-          <div className="alert-info" style={{ marginTop: '12px' }}>
-            <CheckCircle size={14} />
-            <small>Las preguntas incluyen datos demográficos y de satisfacción del producto. Además se recopilarán nombre, teléfono y correo electrónico del encuestado.</small>
-          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>Tipo</label>
+                  <select className="form-select" value={newQuestion.type}
+                    onChange={e => setNewQuestion({ ...newQuestion, type: e.target.value })}>
+                    <option value="select">Selección Única</option>
+                    <option value="multiselect">Selección Múltiple</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>¿Obligatoria?</label>
+                  <select className="form-select" value={newQuestion.required ? 'si' : 'no'}
+                    onChange={e => setNewQuestion({ ...newQuestion, required: e.target.value === 'si' })}>
+                    <option value="si">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Opciones (separadas por coma) *</label>
+                <input className="form-input" placeholder="Ej: Sí, No, Tal vez"
+                  value={newQuestion.options} onChange={e => setNewQuestion({ ...newQuestion, options: e.target.value })} />
+              </div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowAddQuestion(false)}>Cancelar</button>
+                <button className="btn btn-primary btn-sm" onClick={addCustomQuestion}>
+                  <CheckCircle size={14} /> Confirmar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {customQuestions.map((q, idx) => (
+            <div key={q.id} className="card" style={{ padding: '12px', marginBottom: '8px', background: 'var(--bg-secondary)', border: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                    <span className="badge badge-purple" style={{ fontSize: '0.6rem', marginRight: '6px' }}>CUSTOM</span>
+                    {q.label}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                    {q.type === 'select' ? 'Selección única' : 'Selección múltiple'} · {q.options.join(', ')}
+                    {q.required && <span style={{ color: 'var(--error)', marginLeft: '6px' }}>* Obligatoria</span>}
+                  </div>
+                </div>
+                <button className="btn-icon-ghost btn-sm" style={{ color: 'var(--error)' }} onClick={() => removeCustomQuestion(q.id)}>
+                  <XCircle size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {customQuestions.length === 0 && !showAddQuestion && (
+            <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+              No hay preguntas personalizadas. Presiona "Agregar" para crear una.
+            </div>
+          )}
+        </div>
+
+        <div className="alert-info" style={{ marginTop: '16px' }}>
+          <CheckCircle size={14} />
+          <small>Además de las preguntas seleccionadas, el formulario recogerá nombre, teléfono y correo electrónico del encuestado automáticamente.</small>
         </div>
       </Modal>
 

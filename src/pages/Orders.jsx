@@ -223,6 +223,13 @@ export default function Orders() {
                 </div>
               </div>
 
+              {order.tracking_number && (
+                <div className="card" style={{ padding: '10px', marginBottom: '16px', background: 'var(--success-bg)', border: 'none' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Número de Guía</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--success)', letterSpacing: '0.5px' }}>{order.tracking_number}</div>
+                </div>
+              )}
+
               <div className="card-footer-actions" style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
                 <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => openDetail(order)}>
                   <Package size={14} /> Detalles
@@ -360,6 +367,19 @@ export default function Orders() {
               </div>
             </div>
           </div>
+
+          {selectedOrder.carrier && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+              <div className="card" style={{ padding: '14px', background: 'var(--bg-secondary)', border: 'none' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: 600 }}>Transportadora</div>
+                <div style={{ fontWeight: 700, marginTop: '4px' }}>{selectedOrder.carrier}</div>
+              </div>
+              <div className="card" style={{ padding: '14px', background: 'var(--success-bg)', border: 'none' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: 600 }}>Número de Guía</div>
+                <div style={{ fontWeight: 700, marginTop: '4px', color: 'var(--success)', letterSpacing: '0.5px' }}>{selectedOrder.tracking_number || '—'}</div>
+              </div>
+            </div>
+          )}
           
           <h4 style={{ marginBottom: '12px' }}>Productos Solicitados</h4>
           <div className="table-container">

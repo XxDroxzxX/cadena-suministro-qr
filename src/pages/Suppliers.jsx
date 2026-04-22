@@ -237,12 +237,21 @@ export default function Suppliers() {
                     <td>{new Date(order.ordered_at).toLocaleDateString()}</td>
                     <td>{order.expected_at ? new Date(order.expected_at).toLocaleDateString() : 'N/A'}</td>
                     <td>
-                      {order.gps_link ? (
-                        <a href={order.gps_link} target="_blank" rel="noreferrer" className="gps-link">
+                      {order.gps_link && (
+                        <a href={order.gps_link} target="_blank" rel="noreferrer" className="gps-link" style={{ marginBottom: '4px' }}>
                           <MapPin size={14} /> GPS Activo <ExternalLink size={10} />
                         </a>
-                      ) : (
-                        <div style={{ fontSize: '0.85rem' }}>{order.carrier || '—'}</div>
+                      )}
+                      {order.tracking_number && (
+                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--success)' }}>
+                          Guía: {order.tracking_number}
+                        </div>
+                      )}
+                      {order.carrier && !order.gps_link && (
+                        <div style={{ fontSize: '0.85rem' }}>{order.carrier}</div>
+                      )}
+                      {!order.tracking_number && !order.gps_link && !order.carrier && (
+                        <span style={{ color: 'var(--text-tertiary)' }}>—</span>
                       )}
                     </td>
                     <td>
