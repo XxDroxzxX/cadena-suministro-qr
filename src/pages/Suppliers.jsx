@@ -29,7 +29,7 @@ export default function Suppliers() {
   const [newOrder, setNewOrder] = useState({ supplier_id: '', expected_at: '', notes: '' });
   const [shipInfo, setShipInfo] = useState({ carrier: '', tracking_number: '', gps_link: '' });
   const [deliverInfo, setDeliverInfo] = useState({ 
-    quality_rating: 5, environmental_rating: 5, 
+    sustainability_rating: 5, environmental_impact_rating: 5, chemical_free_rating: 5, plant_quality_rating: 5,
     product_id: '', quantity: '', batch_number: '', stand_id: '' 
   });
 
@@ -127,6 +127,9 @@ export default function Suppliers() {
   };
 
   const renderKPIs = (val) => {
+    if (!val || val == 0) {
+      return <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>Sin calificar</div>;
+    }
     return (
       <div className="kpi-stars">
         {[1,2,3,4,5].map(s => (
@@ -216,12 +219,20 @@ export default function Suppliers() {
 
               <div className="supplier-kpis" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="kpi-item">
-                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Calidad</small>
-                  {renderKPIs(s.quality_rating)}
+                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '2px' }}>Sostenibilidad</small>
+                  {renderKPIs(s.sustainability_rating)}
                 </div>
                 <div className="kpi-item">
-                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Ambiente</small>
-                  {renderKPIs(s.environmental_rating)}
+                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '2px' }}>Impacto Ambiental</small>
+                  {renderKPIs(s.environmental_impact_rating)}
+                </div>
+                <div className="kpi-item">
+                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '2px' }}>Libre de Químicos</small>
+                  {renderKPIs(s.chemical_free_rating)}
+                </div>
+                <div className="kpi-item">
+                  <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '2px' }}>Calidad Plantas</small>
+                  {renderKPIs(s.plant_quality_rating)}
                 </div>
               </div>
             </div>
@@ -390,14 +401,24 @@ export default function Suppliers() {
         }>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div className="card" style={{ background: 'var(--bg-secondary)', border: 'none' }}>
-            <h4 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Award size={18} color="var(--primary)" /> Calificación del Proveedor</h4>
-            <div className="form-group">
-              <label className="form-label">Calidad de Materia Prima (1-5)</label>
-              <input type="number" className="form-input" min="1" max="5" value={deliverInfo.quality_rating} onChange={e=>setDeliverInfo({...deliverInfo, quality_rating: e.target.value})} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Cumplimiento Ambiental (1-5)</label>
-              <input type="number" className="form-input" min="1" max="5" value={deliverInfo.environmental_rating} onChange={e=>setDeliverInfo({...deliverInfo, environmental_rating: e.target.value})} />
+            <h4 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Award size={18} color="var(--primary)" /> Calificación Negocios Verdes</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Sostenibilidad (1-5)</label>
+                <input type="number" className="form-input" min="1" max="5" value={deliverInfo.sustainability_rating} onChange={e=>setDeliverInfo({...deliverInfo, sustainability_rating: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Impacto Ambiental (1-5)</label>
+                <input type="number" className="form-input" min="1" max="5" value={deliverInfo.environmental_impact_rating} onChange={e=>setDeliverInfo({...deliverInfo, environmental_impact_rating: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Libre de Químicos (1-5)</label>
+                <input type="number" className="form-input" min="1" max="5" value={deliverInfo.chemical_free_rating} onChange={e=>setDeliverInfo({...deliverInfo, chemical_free_rating: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Calidad de Plantas (1-5)</label>
+                <input type="number" className="form-input" min="1" max="5" value={deliverInfo.plant_quality_rating} onChange={e=>setDeliverInfo({...deliverInfo, plant_quality_rating: e.target.value})} />
+              </div>
             </div>
           </div>
 

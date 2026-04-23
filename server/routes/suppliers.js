@@ -84,7 +84,7 @@ router.put('/orders/:id/ship', authMiddleware, roleGuard('admin', 'bodeguero'), 
 router.put('/orders/:id/deliver', authMiddleware, roleGuard('admin', 'bodeguero'), async (req, res) => {
   const client = await pool.connect();
   try {
-    const { quality_rating, environmental_rating, product_id, quantity, batch_number, stand_id } = req.body;
+    const { sustainability_rating, environmental_impact_rating, chemical_free_rating, plant_quality_rating, product_id, quantity, batch_number, stand_id } = req.body;
     
     await client.query('BEGIN');
 
@@ -100,13 +100,21 @@ router.put('/orders/:id/deliver', authMiddleware, roleGuard('admin', 'bodeguero'
       WHERE id = $1
     `, [req.params.id]);
 
-    // Update Supplier KPIs (Average)
+    // Update Supplier KPIs (Average if not 0)
     await client.query(`
       UPDATE suppliers 
-      SET quality_rating = (quality_rating + $1) / 2,
-          environmental_rating = (environmental_rating + $2) / 2
-      WHERE id = $3
-    `, [quality_rating || 5, environmental_rating || 5, order.supplier_id]);
+      SET sustainability_rating = CASE WHEN sustainability_rating = 0 THEN $1 ELSE (sustainability_rating + $1) / 2 END,
+          environmental_impact_rating = CASE WHEN environmental_impact_rating = 0 THEN $2 ELSE (environmental_impact_rating + $2) / 2 END,
+          chemical_free_rating = CASE WHEN chemical_free_rating = 0 THEN $3 ELSE (chemical_free_rating + $3) / 2 END,
+          plant_quality_rating = CASE WHEN plant_quality_rating = 0 THEN $4 ELSE (plant_quality_rating + $4) / 2 END
+      WHERE id = $5
+    `, [
+      sustainability_rating || 0,
+      environmental_impact_rating || 0,
+      chemical_free_rating || 0,
+      plant_quality_rating || 0,
+      order.supplier_id
+    ]);
 
     // Automatic Stock Intake (if product info provided)
     if (product_id && quantity) {

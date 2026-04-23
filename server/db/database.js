@@ -71,9 +71,19 @@ async function initDatabase() {
         address TEXT,
         quality_rating INTEGER DEFAULT 5,
         environmental_rating INTEGER DEFAULT 5,
+        sustainability_rating INTEGER DEFAULT 0,
+        environmental_impact_rating INTEGER DEFAULT 0,
+        chemical_free_rating INTEGER DEFAULT 0,
+        plant_quality_rating INTEGER DEFAULT 0,
         active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Migrations for new supplier ratings
+      ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS sustainability_rating INTEGER DEFAULT 0;
+      ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS environmental_impact_rating INTEGER DEFAULT 0;
+      ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS chemical_free_rating INTEGER DEFAULT 0;
+      ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS plant_quality_rating INTEGER DEFAULT 0;
 
       CREATE TABLE IF NOT EXISTS supplier_orders (
         id SERIAL PRIMARY KEY,

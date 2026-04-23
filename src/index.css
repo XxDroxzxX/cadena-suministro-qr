@@ -1346,6 +1346,10 @@ img { max-width: 100%; height: auto; }
 .movement-type.salida { color: var(--danger); }
 .movement-type.ajuste { color: var(--info); }
 
+.mobile-menu-btn {
+  display: none;
+}
+
 /* ====== RESPONSIVE ====== */
 @media (max-width: 1024px) {
   .dashboard-grid {
@@ -1368,6 +1372,10 @@ img { max-width: 100%; height: auto; }
 
   .topbar {
     left: 0;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
   }
 
   .page-content {
