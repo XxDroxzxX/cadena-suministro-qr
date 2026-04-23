@@ -172,6 +172,7 @@ img { max-width: 100%; height: auto; }
 .app-layout {
   display: flex;
   min-height: 100vh;
+  min-width: 0;
 }
 
 .main-content {
@@ -179,6 +180,7 @@ img { max-width: 100%; height: auto; }
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   transition: margin-left var(--transition-base);
+  min-width: 0;
 }
 
 .page-content {
@@ -186,6 +188,7 @@ img { max-width: 100%; height: auto; }
   padding-top: calc(var(--topbar-height) + 24px);
   max-width: 1400px;
   min-height: calc(100vh - var(--topbar-height));
+  min-width: 0;
 }
 
 /* ====== SIDEBAR ====== */
@@ -567,6 +570,8 @@ img { max-width: 100%; height: auto; }
   border-radius: var(--radius-lg);
   padding: 24px;
   transition: all var(--transition-base);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .card:hover {
