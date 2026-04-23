@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, QrCode, ScanLine, ArrowLeftRight,
   Users, LogOut, FolderTree, Warehouse, Briefcase, FileBarChart,
-  ShoppingCart, Truck, Factory, ClipboardCheck,
+  ShoppingCart, Truck, Factory, ClipboardCheck, X
 } from 'lucide-react';
 
 const navItems = [
@@ -72,6 +72,9 @@ export default function Sidebar({ isOpen, onClose }) {
           <h1>SPECIAL CLEAN OIL</h1>
           <span>Sistema de Inventario</span>
         </div>
+        <button className="btn-icon-ghost sidebar-close-btn" onClick={() => onClose?.()} title="Cerrar menú">
+          <X size={20} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
