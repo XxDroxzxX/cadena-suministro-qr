@@ -25,6 +25,11 @@ async function apiRequest(endpoint, options = {}) {
     throw new Error('Sesión expirada');
   }
 
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`La API devolvió una respuesta no JSON (HTTP ${response.status}, ${contentType || 'tipo desconocido'}). Verifica el enrutamiento de /api en Vercel.`);
+  }
+
   const data = await response.json();
   
   if (!response.ok) {

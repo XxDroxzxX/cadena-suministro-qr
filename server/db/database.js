@@ -4,14 +4,28 @@ require('dotenv').config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  max: process.env.VERCEL === '1' ? 1 : 10,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 const query = (text, params) => pool.query(text, params);
+let initialization;
+
+function ensureDatabase() {
+  if (!initialization) {
+    initialization = initDatabase();
+  }
+  return initialization;
+}
 
 async function initDatabase() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL no está configurada.');
+  }
+
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     
     // Create Tables
     await client.query(`
@@ -98,6 +112,17 @@ async function initDatabase() {
         notes TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS customers (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        document_id TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         customer_id INTEGER REFERENCES customers(id),
@@ -131,17 +156,6 @@ async function initDatabase() {
         batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
         quantity INTEGER DEFAULT 0,
         UNIQUE(product_id, stand_id, batch_id)
-      );
-
-      CREATE TABLE IF NOT EXISTS customers (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        document_id TEXT,
-        email TEXT,
-        phone TEXT,
-        address TEXT,
-        active INTEGER DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS stock_movements (
@@ -206,13 +220,19 @@ async function initDatabase() {
     `);
 
     // Seed default admin user
-    const res = await client.query('SELECT id FROM users WHERE username = $1', ['admin']);
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const res = await client.query('SELECT id FROM users WHERE username = $1', [adminUsername]);
     if (res.rows.length === 0) {
-      const hash = bcrypt.hashSync('Admin123!', 10);
+      const adminPassword = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'Admin123!');
+      if (!adminPassword) {
+        throw new Error('ADMIN_PASSWORD debe configurarse antes de crear el usuario inicial.');
+      }
+      const adminFullName = process.env.ADMIN_FULL_NAME || 'Administrador';
+      const hash = bcrypt.hashSync(adminPassword, 10);
       await client.query(`
         INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4)
-      `, ['admin', hash, 'Administrador', 'admin']);
-      console.log('✅ Default admin user created (admin / Admin123!)');
+      `, [adminUsername, hash, adminFullName, 'admin']);
+      console.log(`✅ Initial admin user created (${adminUsername})`);
     }
 
     // Seed default categories
@@ -231,12 +251,13 @@ async function initDatabase() {
       console.log('✅ Default categories created');
     }
 
-    client.release();
     console.log('✅ Database (PostgreSQL) initialized successfully');
   } catch (err) {
     console.error('❌ Database initialization error:', err);
     throw err;
+  } finally {
+    client?.release();
   }
 }
 
-module.exports = { pool, query, initDatabase };
+module.exports = { pool, query, ensureDatabase, initDatabase };
